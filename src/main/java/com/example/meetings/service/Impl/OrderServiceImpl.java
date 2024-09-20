@@ -6,10 +6,7 @@ import com.example.meetings.entity.Order;
 import com.example.meetings.entity.Pic;
 import com.example.meetings.entity.Room;
 import com.example.meetings.mapper.OrderMapper;
-import com.example.meetings.service.FoodsService;
-import com.example.meetings.service.OrderService;
-import com.example.meetings.service.PicService;
-import com.example.meetings.service.UserService;
+import com.example.meetings.service.*;
 import com.obs.services.ObsClient;
 import com.obs.services.exception.ObsException;
 import com.obs.services.model.PutObjectResult;
@@ -22,6 +19,10 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -36,7 +37,7 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
     PicService picService;
 
     @Resource
-    FoodsService foodsService;
+    RoomService roomService;
 
     @Override
     public List<Order> getByTimeAndRoom(Room room) {
@@ -381,7 +382,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             return "该会议未订餐";
         }
         String names = order.getNames();
-        String url = fileOper(order.getId().toString(), order.getStartTime(), order.getRoomId(), order.getLeader(), order.getCnts(), names);
+        Room room = roomService.getOneById(order.getRoomId());
+        String url = fileOper(order.getId().toString(), order.getStartTime(), room.getRoomNo(), order.getLeader(), order.getCnts(), names);
 
         return url;
     }
@@ -436,6 +438,17 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             // 加载Word文档
             FileInputStream fis = new FileInputStream("aa.docx");
             XWPFDocument document = new XWPFDocument(fis);
+            long timestampInMillis = Long.parseLong(time);
+            LocalDate localDate = Instant.ofEpochMilli(timestampInMillis)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate();
+
+            // 定义日期格式
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+            // 格式化输出日期
+            time = localDate.format(formatter);
+
 
             // 假设我们要填充的是文档中的第一个表格
             List<XWPFTable> tables = document.getTables();
@@ -454,7 +467,8 @@ public class OrderServiceImpl extends ServiceImpl<OrderMapper, Order> implements
             FileOutputStream out = new FileOutputStream("bb.docx");
             document.write(out);
             FileInputStream lis = new FileInputStream("bb.docx");
-            string = uploadWordNew(lis, id);
+
+            string = uploadWordNew(lis, time+"--"+id);
             // 关闭资源
             out.close();
             document.close();
