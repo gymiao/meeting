@@ -6,6 +6,7 @@ import com.example.meetings.entity.Pic;
 import com.example.meetings.entity.User;
 import com.example.meetings.service.*;
 import com.example.meetings.utils.GetKey;
+import com.example.meetings.utils.Result;
 import com.obs.services.ObsClient;
 import com.obs.services.exception.ObsException;
 import com.obs.services.model.PutObjectResult;
@@ -363,11 +364,12 @@ public class OrderController {
 
         // 管理员调用,尝试审核
         if ( userService.getUserPri(adminId) == 1 ) {
-            order.setStatus(1);
-            occupyService.addOrUpdate(order);
             // 申请key
             // 直接申请密码
             String pwd = GetKey.getKey(order1.getRoomId(), startTime, endTime);
+            if(pwd.isBlank() || pwd.isEmpty()) {
+                return "智能门锁存在问题, 密码申请失败, 请联系管理员";
+            }
             // 保存新的key
             Key key = new Key();
             key.setRoomId(order1.getRoomId());
@@ -378,6 +380,8 @@ public class OrderController {
             // 可以使用
             key.setStatus(1);
             keyService.addOrUpdate(key);
+            order.setStatus(1);
+            occupyService.addOrUpdate(order);
             return "审核成功";
         }
         return "审核失败";

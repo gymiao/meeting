@@ -148,6 +148,9 @@ public class RoomController {
         if(user.getPriority() == 1) {
             // 直接申请密码
             String pwd = GetKey.getKey(room.getRoomId(), startTime, endTime);
+            if(pwd.isBlank() || pwd.isEmpty()) {
+                return Result.fail("智能门锁存在问题, 密码申请失败, 请联系管理员");
+            }
             // 保存新的key
             Key key = new Key();
             key.setRoomId(room.getRoomId());
